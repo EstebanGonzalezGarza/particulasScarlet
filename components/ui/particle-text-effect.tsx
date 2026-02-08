@@ -336,8 +336,9 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     }
     const drawScale = wordScaleRef.current
 
-    // Background with motion blur
-    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
+    // Background with light motion blur (keep background visible)
+    ctx.clearRect(0, 0, width, height)
+    ctx.fillStyle = "rgba(0, 0, 0, 0.03)"
     ctx.fillRect(0, 0, width, height)
 
     // Update and draw floaters
@@ -408,6 +409,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
 
     if (audio) {
       const tryPlay = () => {
+        audio.volume = 1
         audio.play().catch(() => {
           // If autoplay is blocked, wait for user interaction.
         })
@@ -524,20 +526,33 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center w-screen h-screen bg-black p-0 overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden">
       <audio ref={audioRef} className="hidden" src="/audio/soundtrack.mp3" autoPlay preload="auto" />
       <div
+        className="absolute inset-0"
         style={{
-          transform: isPortrait ? "rotate(90deg)" : "none",
-          transformOrigin: "center",
-          transition: "transform 200ms ease, width 300ms ease, height 300ms ease",
+          backgroundImage: "url('/img/background.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(4px)",
+          transform: "scale(1.01)",
+          opacity: 0.9,
         }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="border border-gray-800 rounded-lg shadow-2xl"
-          style={{ maxWidth: "100%", height: "auto" }}
-        />
+      />
+      <div className="relative z-10 flex items-center justify-center w-full h-full">
+        <div
+          style={{
+            transform: isPortrait ? "rotate(90deg)" : "none",
+            transformOrigin: "center",
+            transition: "transform 200ms ease, width 300ms ease, height 300ms ease",
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="shadow-none"
+            style={{ display: "block", backgroundColor: "transparent" }}
+          />
+        </div>
       </div>
     </div>
   )
