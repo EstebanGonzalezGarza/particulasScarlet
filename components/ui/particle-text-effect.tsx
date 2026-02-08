@@ -542,7 +542,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "blur(4px)",
-          transform: isMobile && isPortrait ? "rotate(90deg) scale(1.02)" : "scale(1.01)",
+          transform: isMobile && isPortrait ? "rotate(90deg)" : "none",
           transformOrigin: "center",
           opacity: 0.9,
         }}
