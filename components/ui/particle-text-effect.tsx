@@ -435,9 +435,12 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       setIsPortrait(portrait)
       const viewWidth = portrait ? window.innerHeight : window.innerWidth
       const viewHeight = portrait ? window.innerWidth : window.innerHeight
-      const maxWidth = Math.max(320, viewWidth - 32)
-      const width = Math.min(maxWidth, baseWidth)
-      const height = Math.min(Math.round((width / baseWidth) * baseHeight), Math.max(240, viewHeight - 32))
+      const isMobile = Math.max(window.innerWidth, window.innerHeight) <= 900
+
+      const width = isMobile ? viewWidth : Math.min(viewWidth, baseWidth)
+      const height = isMobile
+        ? viewHeight
+        : Math.min(Math.round((width / baseWidth) * baseHeight), viewHeight)
       const dpr = window.devicePixelRatio || 1
 
       sizeRef.current = { width, height, dpr }
@@ -521,7 +524,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black px-4 py-6">
+    <div className="flex flex-col items-center justify-center w-screen h-screen bg-black p-0 overflow-hidden">
       <audio ref={audioRef} className="hidden" src="/audio/soundtrack.mp3" autoPlay preload="auto" />
       <div
         style={{
