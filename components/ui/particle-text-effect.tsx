@@ -162,6 +162,8 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   const animationRef = useRef<number | null>(null)
   const sizeRef = useRef({ width: 0, height: 0, dpr: 1 })
   const [isPortrait, setIsPortrait] = useState(false)
+  const [audioReady, setAudioReady] = useState(false)
+  const audioPlayHandlerRef = useRef<() => void>(() => {})
   const particlesRef = useRef<Particle[]>([])
   const floatersRef = useRef<Floater[]>([])
   const frameCountRef = useRef(0)
@@ -175,6 +177,10 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   const drawAsPoints = true
   const baseWidth = 1400
   const baseHeight = 650
+  const isMobile = Math.max(
+    typeof window !== "undefined" ? window.innerWidth : 0,
+    typeof window !== "undefined" ? window.innerHeight : 0,
+  ) <= 900
 
   const generateRandomPos = (x: number, y: number, mag: number): Vector2D => {
     const randomX = Math.random() * 1000
@@ -408,6 +414,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     let handleFirstInteraction: (() => void) | null = null
 
     if (audio) {
+      audioPlayHandlerRef.current = () => setAudioReady(true)
       const tryPlay = () => {
         audio.volume = 1
         audio.play().catch(() => {
@@ -415,6 +422,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
         })
       }
       tryPlay()
+      audio.addEventListener("play", audioPlayHandlerRef.current, { once: true })
 
       handleFirstInteraction = () => {
         tryPlay()
@@ -437,8 +445,6 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       setIsPortrait(portrait)
       const viewWidth = portrait ? window.innerHeight : window.innerWidth
       const viewHeight = portrait ? window.innerWidth : window.innerHeight
-      const isMobile = Math.max(window.innerWidth, window.innerHeight) <= 900
-
       const width = isMobile ? viewWidth : Math.min(viewWidth, baseWidth)
       const height = isMobile
         ? viewHeight
@@ -517,6 +523,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
         window.removeEventListener("pointerdown", handleFirstInteraction)
         window.removeEventListener("keydown", handleFirstInteraction)
       }
+      audio.removeEventListener("play", audioPlayHandlerRef.current)
       window.removeEventListener("resize", resizeCanvas)
       canvas.removeEventListener("mousedown", handleMouseDown)
       canvas.removeEventListener("mouseup", handleMouseUp)
@@ -535,11 +542,36 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "blur(4px)",
-          transform: "scale(1.01)",
+          transform: isMobile && isPortrait ? "rotate(90deg) scale(1.02)" : "scale(1.01)",
+          transformOrigin: "center",
           opacity: 0.9,
         }}
       />
       <div className="relative z-10 flex items-center justify-center w-full h-full">
+        {!audioReady && (
+          <button
+            onClick={() => {
+              const audio = audioRef.current
+              if (audio) {
+                audio.volume = 1
+                audio.play().then(() => setAudioReady(true)).catch(() => {})
+              }
+            }}
+            className="absolute top-4 right-4 z-20 rounded-full border border-white/40 bg-black/30 px-3 py-2 text-white shadow-sm backdrop-blur"
+            aria-label="Activar música"
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block text-lg"
+              style={{
+                animation: "pulse-heart 1.8s ease-in-out infinite",
+                transformOrigin: "center",
+              }}
+            >
+              ♪
+            </span>
+          </button>
+        )}
         <div
           style={{
             transform: isPortrait ? "rotate(90deg)" : "none",
