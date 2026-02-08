@@ -523,7 +523,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
         window.removeEventListener("pointerdown", handleFirstInteraction)
         window.removeEventListener("keydown", handleFirstInteraction)
       }
-      audio.removeEventListener("play", audioPlayHandlerRef.current)
+      audio?.removeEventListener("play", audioPlayHandlerRef.current)
       window.removeEventListener("resize", resizeCanvas)
       canvas.removeEventListener("mousedown", handleMouseDown)
       canvas.removeEventListener("mouseup", handleMouseUp)
