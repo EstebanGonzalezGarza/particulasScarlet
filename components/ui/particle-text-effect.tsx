@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface Vector2D {
   x: number
@@ -160,6 +160,8 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const animationRef = useRef<number | null>(null)
+  const sizeRef = useRef({ width: 0, height: 0, dpr: 1 })
+  const [isPortrait, setIsPortrait] = useState(false)
   const particlesRef = useRef<Particle[]>([])
   const floatersRef = useRef<Floater[]>([])
   const frameCountRef = useRef(0)
@@ -171,6 +173,8 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
 
   const pixelSteps = 4
   const drawAsPoints = true
+  const baseWidth = 1400
+  const baseHeight = 650
 
   const generateRandomPos = (x: number, y: number, mag: number): Vector2D => {
     const randomX = Math.random() * 1000
@@ -200,20 +204,24 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     wordFrameRef.current = 0
     // const ctx = canvas.getContext("2d")!
 
+    const { width, height } = sizeRef.current
+
     // Create off-screen canvas for text rendering
     const offscreenCanvas = document.createElement("canvas")
-    offscreenCanvas.width = canvas.width
-    offscreenCanvas.height = canvas.height
+    offscreenCanvas.width = width
+    offscreenCanvas.height = height
     const offscreenCtx = offscreenCanvas.getContext("2d")!
+
+    const fontSize = Math.max(90, Math.min(200, Math.floor(width * 0.15)))
 
     // Draw text
     offscreenCtx.fillStyle = "white"
-    offscreenCtx.font = "bold 190px Arial"
+    offscreenCtx.font = `bold ${fontSize}px Arial`
     offscreenCtx.textAlign = "center"
     offscreenCtx.textBaseline = "middle"
-    offscreenCtx.fillText(word, canvas.width / 2, canvas.height / 2)
+    offscreenCtx.fillText(word, width / 2, height / 2)
 
-    const imageData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height)
+    const imageData = offscreenCtx.getImageData(0, 0, width, height)
     const pixels = imageData.data
 
     // Generate new color
@@ -253,8 +261,8 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       const alpha = pixels[pixelIndex + 3]
 
       if (alpha > 0) {
-        const x = (pixelIndex / 4) % canvas.width
-        const y = Math.floor(pixelIndex / 4 / canvas.width)
+        const x = (pixelIndex / 4) % width
+        const y = Math.floor(pixelIndex / 4 / width)
 
         let particle: Particle
 
@@ -265,7 +273,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
         } else {
           particle = new Particle()
 
-          const randomPos = generateRandomPos(canvas.width / 2, canvas.height / 2, (canvas.width + canvas.height) / 2)
+          const randomPos = generateRandomPos(width / 2, height / 2, (width + height) / 2)
           particle.pos.x = randomPos.x
           particle.pos.y = randomPos.y
 
@@ -293,7 +301,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
 
     // Kill remaining particles
     for (let i = particleIndex; i < particles.length; i++) {
-      particles[i].kill(canvas.width, canvas.height)
+      particles[i].kill(width, height)
     }
   }
 
@@ -304,8 +312,9 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     const ctx = canvas.getContext("2d")!
     const particles = particlesRef.current
     const floaters = floatersRef.current
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
+    const { width, height } = sizeRef.current
+    const centerX = width / 2
+    const centerY = height / 2
 
     const currentWord = activeWordRef.current.trim().toUpperCase()
     wordFrameRef.current += 1
@@ -329,17 +338,17 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
 
     // Background with motion blur
     ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, width, height)
 
     // Update and draw floaters
     for (const floater of floaters) {
       floater.pos.x += floater.vel.x
       floater.pos.y += floater.vel.y
 
-      if (floater.pos.x < 0 || floater.pos.x > canvas.width) {
+      if (floater.pos.x < 0 || floater.pos.x > width) {
         floater.vel.x *= -1
       }
-      if (floater.pos.y < 0 || floater.pos.y > canvas.height) {
+      if (floater.pos.y < 0 || floater.pos.y > height) {
         floater.vel.y *= -1
       }
 
@@ -359,9 +368,9 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       if (particle.isKilled) {
         if (
           particle.pos.x < 0 ||
-          particle.pos.x > canvas.width ||
+          particle.pos.x > width ||
           particle.pos.y < 0 ||
-          particle.pos.y > canvas.height
+          particle.pos.y > height
         ) {
           particles.splice(i, 1)
         }
@@ -375,7 +384,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
           Math.pow(particle.pos.x - mouseRef.current.x, 2) + Math.pow(particle.pos.y - mouseRef.current.y, 2),
         )
         if (distance < 50) {
-          particle.kill(canvas.width, canvas.height)
+          particle.kill(width, height)
         }
       })
     }
@@ -419,14 +428,39 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     const canvas = canvasRef.current
     if (!canvas) return
 
-    canvas.width = 1400
-    canvas.height = 650
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement
+      if (!parent) return
+      const portrait = window.innerHeight > window.innerWidth
+      setIsPortrait(portrait)
+      const viewWidth = portrait ? window.innerHeight : window.innerWidth
+      const viewHeight = portrait ? window.innerWidth : window.innerHeight
+      const maxWidth = Math.max(320, viewWidth - 32)
+      const width = Math.min(maxWidth, baseWidth)
+      const height = Math.min(Math.round((width / baseWidth) * baseHeight), Math.max(240, viewHeight - 32))
+      const dpr = window.devicePixelRatio || 1
+
+      sizeRef.current = { width, height, dpr }
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      canvas.width = Math.floor(width * dpr)
+      canvas.height = Math.floor(height * dpr)
+
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      }
+    }
+
+    resizeCanvas()
+    window.addEventListener("resize", resizeCanvas)
 
     if (floatersRef.current.length === 0) {
       const floaters: Floater[] = []
+      const { width, height } = sizeRef.current
       for (let i = 0; i < 220; i++) {
         floaters.push({
-          pos: { x: Math.random() * canvas.width, y: Math.random() * canvas.height },
+          pos: { x: Math.random() * width, y: Math.random() * height },
           vel: { x: (Math.random() - 0.5) * 0.6, y: (Math.random() - 0.5) * 0.6 },
           size: Math.random() * 1.8 + 0.6,
           color: "rgba(255, 255, 255, 0.35)",
@@ -478,6 +512,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
         window.removeEventListener("pointerdown", handleFirstInteraction)
         window.removeEventListener("keydown", handleFirstInteraction)
       }
+      window.removeEventListener("resize", resizeCanvas)
       canvas.removeEventListener("mousedown", handleMouseDown)
       canvas.removeEventListener("mouseup", handleMouseUp)
       canvas.removeEventListener("mousemove", handleMouseMove)
@@ -486,15 +521,21 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black px-4 py-6">
       <audio ref={audioRef} className="hidden" src="/audio/soundtrack.mp3" autoPlay preload="auto" />
-      <canvas
-        ref={canvasRef}
-        className="border border-gray-800 rounded-lg shadow-2xl"
-        style={{ maxWidth: "100%", height: "auto" }}
-      />
-
-
+      <div
+        style={{
+          transform: isPortrait ? "rotate(90deg)" : "none",
+          transformOrigin: "center",
+          transition: "transform 200ms ease, width 300ms ease, height 300ms ease",
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          className="border border-gray-800 rounded-lg shadow-2xl"
+          style={{ maxWidth: "100%", height: "auto" }}
+        />
+      </div>
     </div>
   )
 }
