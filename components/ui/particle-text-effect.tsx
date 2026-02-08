@@ -536,15 +536,19 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     <div className="fixed inset-0 overflow-hidden">
       <audio ref={audioRef} className="hidden" src="/audio/soundtrack.mp3" autoPlay preload="auto" />
       <div
-        className="absolute inset-0"
+        className="absolute"
         style={{
           backgroundImage: "url('/img/background.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "blur(4px)",
-          transform: isMobile && isPortrait ? "rotate(90deg)" : "none",
-          transformOrigin: "center",
           opacity: 0.9,
+          top: isMobile && isPortrait ? "50%" : "0",
+          left: isMobile && isPortrait ? "50%" : "0",
+          width: isMobile && isPortrait ? "100vh" : "100%",
+          height: isMobile && isPortrait ? "100vw" : "100%",
+          transform: isMobile && isPortrait ? "translate(-50%, -50%) rotate(90deg)" : "none",
+          transformOrigin: "center",
         }}
       />
       <div className="relative z-10 flex items-center justify-center w-full h-full">
